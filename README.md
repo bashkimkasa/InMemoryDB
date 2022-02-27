@@ -1,5 +1,5 @@
 # InMemoryDB
-DotNet Simple InMemoryDB example.
+DotNet simple in-memory db example.
 
 ## Overview
 This project is a very simple in-memory db implemented with DotNet5.0. It supports basic transactions.  
