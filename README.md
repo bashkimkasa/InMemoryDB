@@ -26,10 +26,10 @@ Any of the put-record, get-record, or delete-record operations without a transac
 In order to use transactionId with these operations a transaction has to be created first using create-transaction operation.  
 When ready to commit a transaction use commit-transaction operation. Whenever a transaction needs to be cancelled use rollback-transaction operation.  
   
-Transaction isolation closely follows the read committed isolation level. Hence, the read operations do not need to be stored in the transaction repo (as read-locks are released as soon as select statements complete in this isolation level). In addition, write transactions do not block other transactions (either read or write).
+Transaction isolation closely follows the read committed isolation level. Hence, the read operations do not need to be stored in the transaction repo (as read-locks are released as soon as select statements complete in this isolation level). In addition, in this implementation 'write' transactions do not block other transactions (either read or write).
   
 When committing or rolling back a transaction the transactionId is invalidated (and deleted) accordingly.  
-Also, when committing a transaction it will fail and error out accordingly if there is a conflict (meaning the transaction attempts to change a value for a key that was mutated after the transaction was created).
+Also, when committing a transaction, it will fail and error out accordingly if there is a conflict (meaning the transaction attempts to change a value for a key that was mutated after the transaction was created).
 
 Here is an example request sequence without transactions:
 ```console
