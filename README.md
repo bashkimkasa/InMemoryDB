@@ -24,3 +24,44 @@ Transaction isolation closely follows the read committed isolation level. Hence,
 
 When committing or rolling back a transaction the transactionId is invalidated (and deleted) accordingly.
 Also, when committing a transaction it will fail and error out accordingly if there is a conflict (meaning the transaction attempts to change a value for a key that was mutated after the transaction was created).
+
+Here is an example request sequence without transactions:
+```console
+http://localhost:5000/database/put-record?key=example&value=foo   -> returns null
+http://localhost:5000/database/get-record?key=example             -> returns "foo"
+http://localhost:5000/database/delete-record?key=example          -> returns null
+http://localhost:5000/database/get-record?key=example             -> returns null
+http://localhost:5000/database/delete-record?key=example          -> returns null
+```
+  
+Here is an example request sequence with transactions:
+```console
+http://localhost:5000/database/create-transaction?transactionId=abc           -> returns null
+http://localhost:5000/database/put-record?key=a&value=foo&transactionId=abc   -> returns null
+http://localhost:5000/database/get-record?key=a&transactionId=abc             -> returns "foo"
+http://localhost:5000/database/get-record?key=a                               -> returns null
+
+http://localhost:5000/database/create-transaction?transactionId=xyz           -> returns null
+http://localhost:5000/database/put-record?key=a&value=bar&transactionId=xyz   -> returns null
+http://localhost:5000/database/get-record?key=a&transactionId=xyz             -> returns "bar"
+http://localhost:5000/database/commit-transaction?transactionId=xyz           -> returns null
+http://localhost:5000/database/get-record?key=a                               -> returns "bar"
+
+http://localhost:5000/database/commit-transaction?transactionId=abc           -> returns error (conflict - mutated key)
+
+http://localhost:5000/database/get-record?key=a                               -> returns "bar"
+
+http://localhost:5000/database/create-transaction?transactionId=abc           -> returns null
+http://localhost:5000/database/put-record?key=a&value=foo&transactionId=abc   -> returns null
+http://localhost:5000/database/get-record?key=a                               -> returns "bar"
+http://localhost:5000/database/rollback-transaction?transactionId=abc         -> returns null
+http://localhost:5000/database/put-record?key=a&value=foo&transactionId=abc   -> returns error (invalid transactionId)
+http://localhost:5000/database/get-record?key=a                               -> returns "bar"
+
+http://localhost:5000/database/create-transaction?transactionId=def           -> returns null
+http://localhost:5000/database/put-record?key=b&value=foo&transactionId=def   -> returns null
+http://localhost:5000/database/get-record?key=a&transactionId=def             -> returns "bar"
+http://localhost:5000/database/get-record?key=b&transactionId=def             -> returns "foo"
+http://localhost:5000/database/rollback-transaction?transactionId=def         -> returns null
+http://localhost:5000/database/get-record?key=b                               -> returns null
+```
