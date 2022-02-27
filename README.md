@@ -31,6 +31,8 @@ Transaction isolation closely follows the read committed isolation level. Hence,
 When committing or rolling back a transaction the transactionId is invalidated (and deleted) accordingly.  
 Also, when committing a transaction, it will fail and error out accordingly if there is a conflict (meaning the transaction attempts to change a value for a key that was mutated after the transaction was created).
 
+Error handling is very simple and all errors are returned as HTTP 500 with the appropriate message detail for the particular error.
+
 Here is an example request sequence without transactions:
 ```console
 http://localhost:5000/database/put-record?key=example&value=foo   -> returns null
