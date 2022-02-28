@@ -3,7 +3,7 @@ DotNet simple in-memory db example.
 
 ## Overview
 This project is a very simple in-memory db implemented with DotNet5.0. It supports basic transactions.  
-It uses dictionaries for the in-memory repos.  
+It uses dictionaries (ConcurrentDictionary for thread-safety support) for the in-memory repos.  
 It provides a swagger interface to test with at (default port 5000): http://localhost:5000/swagger/index.html  
 For simplicity all the APIs are exposed as HTTP GET Requests (with required and optional query parameters - documented in swagger).  
 It exposes the following APIs:
