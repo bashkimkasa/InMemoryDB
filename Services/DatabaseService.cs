@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,8 +11,8 @@ namespace InMemoryDB.Services
     public class DatabaseService : IDatabaseService
     {
         //Initialize in memory key value store and transaction store
-        private readonly Dictionary<string, Record> keyValueStore = new();
-        private readonly Dictionary<string, TransactionRecords> transactionStore = new();
+        private readonly ConcurrentDictionary<string, Record> keyValueStore = new();
+        private readonly ConcurrentDictionary<string, TransactionRecords> transactionStore = new();
 
         public void PutRecord(string key, string value)
         {
@@ -25,21 +26,21 @@ namespace InMemoryDB.Services
 
         public void DeleteRecord(string key)
         {
-            keyValueStore.Remove(key);
+            keyValueStore.TryRemove(key, out _);
         }
 
         public void CreateTransaction(string transactionId)
         {
             if (transactionStore.ContainsKey(transactionId))
                 throw new Exception("Dublicate Transaction Id");
-            transactionStore.Add(transactionId, new());
+            transactionStore.TryAdd(transactionId, new());
         }
 
         public void RollbackTransaction(string transactionId)
         {
             if (!transactionStore.ContainsKey(transactionId))
                 throw new Exception("Invalid Transaction Id");
-            transactionStore.Remove(transactionId);
+            transactionStore.TryRemove(transactionId, out _);
         }
 
         public void CommmitTransaction(string transactionId)
@@ -55,7 +56,7 @@ namespace InMemoryDB.Services
                 var originalRecord = keyValueStore.GetValueOrDefault(item.Key);
                 if (originalRecord?.TimeStamp > tranRecords.TransactionStartTime)
                 {
-                    transactionStore.Remove(transactionId);
+                    transactionStore.TryRemove(transactionId, out _);
                     throw new Exception("Transaction conflict - key mutation has occured since this transaction started");
                 }
             }
@@ -66,7 +67,7 @@ namespace InMemoryDB.Services
                 putRecordHelper(keyValueStore, item.Key, item.Value?.Value);
             }
 
-            transactionStore.Remove(transactionId);
+            transactionStore.TryRemove(transactionId, out _);
         }
 
         public void PutRecordWithTransaction(string key, string value, string transactionId)
@@ -102,23 +103,23 @@ namespace InMemoryDB.Services
                 throw new Exception("Invalid Transaction Id");
             ///Get TransactionRecords for the transaction and delete record accordingly.
             TransactionRecords tranRecords = transactionStore.GetValueOrDefault(transactionId);
-            tranRecords.Records?.Remove(key);
+            tranRecords.Records?.TryRemove(key, out _);
         }
 
-        internal void putRecordHelper(Dictionary<string, Record> dictionary, string key, string value)
+        internal void putRecordHelper(ConcurrentDictionary<string, Record> dictionary, string key, string value)
         {
             if (dictionary.ContainsKey(key))
                 dictionary[key] = new Record(value);
             else
-                dictionary.Add(key, new Record(value));
+                dictionary.TryAdd(key, new Record(value));
         }
 
-        internal void putTransactionRecordHelper(Dictionary<string, TransactionRecord> dictionary, string key, TransactionRecord record)
+        internal void putTransactionRecordHelper(ConcurrentDictionary<string, TransactionRecord> dictionary, string key, TransactionRecord record)
         {
             if (dictionary.ContainsKey(key))
                 dictionary[key] = record;
             else
-                dictionary.Add(key, record);
+                dictionary.TryAdd(key, record);
         }
 
         internal class Record
@@ -147,7 +148,7 @@ namespace InMemoryDB.Services
         internal class TransactionRecords
         {
             public DateTime TransactionStartTime { get; set; } = DateTime.Now;
-            public Dictionary<string, TransactionRecord> Records { get; set; } = new();
+            public ConcurrentDictionary<string, TransactionRecord> Records { get; set; } = new();
         }
     }
 }
